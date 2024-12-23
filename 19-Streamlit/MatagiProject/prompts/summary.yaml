@@ -1,0 +1,10 @@
+_type: "prompt"
+template: |
+  당신은 긴 글을 요약하는 전문가입니다.
+  내용을 10문장 내외로 요약해주세요.
+  
+  #Question:
+  {question}
+
+  #Answer:
+input_variables: ["question"]

@@ -5,7 +5,8 @@ from langchain_core.messages.chat import ChatMessage
 from langchain.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
-
+from langchain_teddynote.prompts import load_prompt
+from langchain import hub
 
 # 초기 셋팅
 load_dotenv()
@@ -24,18 +25,21 @@ def print_messages():
         st.chat_message(chat_msg.role).write(chat_msg.content)
 
 
-def create_chain():
+def create_chain(prompt_type):
     """
     체인 생성
     """
-    # prompt | llm | output_parser
-    # Prompt
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            ("system", "당신은 친절한 AI 상담원 입니다."),
-            ("user", "#Question:\n{question}"),
-        ]
-    )
+    if prompt_type == "기본모드":
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", "당신은 친절한 AI 상담원 입니다."),
+                ("user", "#Question:\n{question}"),
+            ]
+        )
+    elif prompt_type == "SNS 게시글":
+        prompt = load_prompt("./prompts/sns.yaml", encoding="utf-8")
+    elif prompt_type == "요약":
+        prompt = hub.pull("teddynote/chain-of-density-korean")
 
     # GPT
     llm = ChatOpenAI(model_name="gpt-4o", temperature=0)
@@ -51,7 +55,15 @@ def create_chain():
 
 # 사이드 바
 with st.sidebar:
+    # 초기화 버튼
     clear_btn = st.button("대화 초기화")
+
+    # 프롬프트 선택
+    selected_prompt = st.selectbox(
+        "프롬프트를 선택해 주세요",
+        ("기본모드", "SNS 게시글", "요약"),
+        index=0,
+    )
 
 
 # 대화 기록을 저장해주는 용도
@@ -70,12 +82,12 @@ if user_input:
     with st.chat_message("user"):
         st.write(user_input)
     # chain을 생성
-    chain = create_chain()
+    chain = create_chain(prompt_type=selected_prompt)
 
     # 한 번에 출력
     # ai_answer = chain.invoke({"question": user_input})
 
-    # chatGPT처럼 출력
+    # chatGPT처럼 출력 (streaming)
     ai_response = chain.stream({"question": user_input})
     ai_answer = ""
     with st.chat_message("assistant"):
