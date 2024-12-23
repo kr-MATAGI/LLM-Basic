@@ -1,5 +1,4 @@
 import streamlit as st
-import glob
 import os
 from dotenv import load_dotenv
 
@@ -12,11 +11,14 @@ from langchain_core.messages.chat import ChatMessage
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 from langchain_teddynote.prompts import load_prompt
-from langchain.prompts import PromptTemplate
 from langchain_core.runnables import RunnablePassthrough
+from langchain_teddynote import logging
 
 # 초기 셋팅
 load_dotenv()
+
+# 프로젝트 이름을 입력합니다.
+logging.langsmith("[Project] PDF-RAG")
 
 # 캐시 디렉토리 생성
 if not os.path.exists(".cache"):
@@ -42,40 +44,15 @@ def print_messages():
         st.chat_message(chat_msg.role).write(chat_msg.content)
 
 
-def create_chain(retriever):
+def create_chain(retriever, model_name="gpt-4o"):
     """
     체인 생성
     """
-    # prompt = load_prompt(prompt_filepath, encoding="utf-8")
-
-    # # GPT
-    # llm = ChatOpenAI(model_name="gpt-4o", temperature=0)
-
-    # Parser
-    # output_parser = StrOutputParser()
-
-    # Chain
-    # chain = prompt | llm | output_parser
-    # 단계 6: 프롬프트 생성(Create Prompt)
-    # 프롬프트를 생성합니다.
-    prompt = PromptTemplate.from_template(
-        """You are an assistant for question-answering tasks. 
-    Use the following pieces of retrieved context to answer the question. 
-    If you don't know the answer, just say that you don't know. 
-    Answer in Korean.
-
-    #Context: 
-    {context}
-
-    #Question:
-    {question}
-
-    #Answer:"""
-    )
+    prompt = load_prompt("prompts/pdf-rag.yaml", encoding="utf-8")
 
     # 단계 7: 언어모델(LLM) 생성
     # 모델(LLM) 을 생성합니다.
-    llm = ChatOpenAI(model_name="gpt-4o", temperature=0)
+    llm = ChatOpenAI(model_name=model_name, temperature=0)
 
     # 단계 8: 체인(Chain) 생성
     chain = (
@@ -127,8 +104,10 @@ with st.sidebar:
     # 파일 업로드
     uploaded_file = st.file_uploader("파일 업로드", type=["pdf"])
 
-    # 프롬프트 선택
-    selected_prompt = "prompts/pdf-rag.yaml"
+    # LLM 모델 선택
+    selected_model = st.selectbox(
+        "LLM 선택", ["gpt-4o", "gpt-4-turbo", "gpt-4o-mini"], index=0
+    )
 
 
 # 대화 기록을 저장해주는 용도
@@ -147,7 +126,7 @@ if "chain" not in st.session_state:
 if uploaded_file:
     # 파입 업로드 후 retriever 생성 (작업시간 오래 걸릴 예정 ...)
     retriever = embed_file(uploaded_file)
-    chain = create_chain(retriever=retriever)
+    chain = create_chain(retriever=retriever, model_name=selected_model)
     st.session_state["chain"] = chain
 
 # 사용자 질의
