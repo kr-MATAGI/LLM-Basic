@@ -1,4 +1,4 @@
-FROM EEVE-Korean-Instruct-10.8B-v1.0-Q8_0.gguf
+FROM EEVE-Korean-Instruct-10.8B-v1.0-Q4_0.gguf
 
 TEMPLATE """{{- if .System }}
 <s>{{ .System }}</s>
