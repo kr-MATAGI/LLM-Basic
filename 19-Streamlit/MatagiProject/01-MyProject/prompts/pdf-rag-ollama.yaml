@@ -9,9 +9,8 @@ template: |
   {context} 
   </information>
 
-  <Question>
+  #Question: 
   {question}
-  </Question>
 
   #Answer:
 input_variables: ["question", "context"]
